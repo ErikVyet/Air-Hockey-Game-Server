@@ -1,9 +1,15 @@
 import { defineServer, defineRoom, monitor, playground, createRouter, createEndpoint, LobbyRoom } from "colyseus";
-
-/**
- * Import your Room files
- */
 import { Session } from "./rooms/Session.js";
+import { matchMaker } from "colyseus";
+import { env } from "process";
+
+matchMaker.controller.getCorsHeaders = function (req) {
+    return {
+        "Access-Control-Allow-Origin": env.CLIENT_TEST_URL,
+        "Access-Control-Allow-Credentials": "true",
+        "Vary": "Origin",
+    }
+}
 
 const server = defineServer({
 
@@ -54,6 +60,7 @@ const server = defineServer({
         if (process.env.NODE_ENV !== "production") {
             app.use("/playground", playground());
         }
+
     }
 });
 

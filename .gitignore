@@ -4,5 +4,4 @@ build
 .devmode.json
 dist
 
-.env.development
-.env.production
+*.env

@@ -18,7 +18,10 @@ export class Session extends Room<{ state: GameState }> {
             this.password = options?.password as string;
         }
 
-        this.setMetadata({ sessionName: this.state.sessionName, hasPassword: !!this.password });
+        this.setMetadata({ 
+            sessionName: this.state.sessionName,
+            hasPassword: !!this.password
+        });
 
         this.onMessage("updatePuck", (_client, message, _context) => {
             this.state.puckPosition = new ArraySchema<number>(...message.position as [number, number, number]);
