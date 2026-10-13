@@ -29,9 +29,9 @@ const server = defineServer({
      *
      */
     routes: createRouter({
-        api_hello: createEndpoint("/api/hello", { method: "GET" }, async (ctx) => {
-            return { message: "Hello World" };
-        }),
+        health: createEndpoint("/api/health", { method: "HEAD" }, async (ctx) => {
+            return { status: 200, message: "OK" };
+        })
     }),
 
     /**
