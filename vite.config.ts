@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import { colyseus } from "colyseus/vite";
+import { env } from "process";
 
 export default defineConfig(({ mode }) => ({
     build: { outDir: "dist/client" },
@@ -9,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     server: {
         port: 5174,
         cors: {
-            origin: "http://localhost:5173",
+            origin: env.CLIENT_URL as string,
             credentials: true
         }
     }

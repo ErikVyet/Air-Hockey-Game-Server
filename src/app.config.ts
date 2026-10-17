@@ -5,7 +5,7 @@ import { env } from "process";
 
 matchMaker.controller.getCorsHeaders = function (req) {
     return {
-        "Access-Control-Allow-Origin": env.CLIENT_TEST_URL,
+        "Access-Control-Allow-Origin": env.CLIENT_URL,
         "Access-Control-Allow-Credentials": "true",
         "Vary": "Origin",
     }
