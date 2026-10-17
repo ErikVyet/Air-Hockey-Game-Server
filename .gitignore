@@ -4,4 +4,4 @@ build
 .devmode.json
 dist
 
-*.env
+.env*
