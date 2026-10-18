@@ -1,9 +1,10 @@
-import { AuthContext, Client, CloseCode, Room } from "colyseus";
+import { AuthContext, Client, CloseCode, ErrorCode, Room } from "colyseus";
 import { GameState } from "./schema/GameState";
 import { ArraySchema } from "@colyseus/schema";
 import { Player } from "./schema/Player";
 import { SessionMessage } from "../enums/SessionMessage";
 import { ExtendCloseCode } from "../enums/ExtendCloseCode";
+import { ExtendErrorCode } from "../enums/ExtendErrorCode";
 
 
 /* Options' JSON structure
@@ -78,6 +79,27 @@ export class Session extends Room<{ state: GameState }> {
             }
         });
 
+        this.onMessage(SessionMessage.UPDATE_PLAYER_NAME, (client, newName: string) => {
+            if (!newName || newName === "") {
+                client.send(SessionMessage.CAUGHT_ERROR, {
+                    code: ExtendErrorCode.BAD_REQUEST,
+                    message: "Player's name can not be blank" 
+                });
+                return;
+            }
+
+            const player = this.state.players.get(client.sessionId);
+            if (player) {
+                player.name = newName;
+            }
+            else {
+                client.send(SessionMessage.CAUGHT_ERROR, {
+                    code: ExtendErrorCode.NOT_FOUND,
+                    message: "Player not found" 
+                });
+            }
+        });
+
         this.onMessage(SessionMessage.UPDATE_PLAYER_ROLE, (client, newRole: "player" | "spectator") => {
             if (client.sessionId !== this.state.hostSessionId) {
                 const targetPlayer = this.state.players.get(client.sessionId);
@@ -86,7 +108,10 @@ export class Session extends Room<{ state: GameState }> {
                     targetPlayer.isReady = newRole === "spectator";
                 }
                 else {
-                    throw new Error("Player not found");
+                    client.send(SessionMessage.CAUGHT_ERROR, { 
+                        code: ExtendErrorCode.NOT_FOUND,
+                        message: "Player not found" 
+                    });
                 }
             }
         });
@@ -97,7 +122,10 @@ export class Session extends Room<{ state: GameState }> {
                 player.isReady = !player.isReady;
             }
             else {
-                throw new Error("Player not found");
+                client.send(SessionMessage.CAUGHT_ERROR, { 
+                    code: ExtendErrorCode.NOT_FOUND,
+                    message: "Player not found" 
+                });
             }
         });
 
@@ -163,7 +191,6 @@ export class Session extends Room<{ state: GameState }> {
                 }
             });
             this.state.players.delete(player.sessionId);
-            return;
         }
         else if (this.state.players.delete(client.sessionId) && player.role === "spectator") {
             this.state.spectatorCount--;
