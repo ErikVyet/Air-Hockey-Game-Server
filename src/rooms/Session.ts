@@ -5,6 +5,8 @@ import { Player } from "./schema/Player";
 import { SessionMessage } from "../enums/SessionMessage";
 import { ExtendCloseCode } from "../enums/ExtendCloseCode";
 import { ExtendErrorCode } from "../enums/ExtendErrorCode";
+import { Message } from "./schema/Message";
+import { MAX_MESSAGES_COUNT, MAX_RECONNECTION_DURATION, MAX_ROUNDS, MIN_ROUNDS } from "../constants/State";
 
 
 /* Options' JSON structure
@@ -43,7 +45,7 @@ export class Session extends Room<{ state: GameState }> {
 
         this.onMessage(SessionMessage.UPDATE_MAX_ROUNDS, (client, maxRounds: number) => {
             if (client.sessionId === this.state.hostSessionId) {
-                this.state.maxRounds = Math.max(3, Math.min(maxRounds, 10));
+                this.state.maxRounds = Math.max(MIN_ROUNDS, Math.min(maxRounds, MAX_ROUNDS));
             }
         });
 
@@ -87,9 +89,27 @@ export class Session extends Room<{ state: GameState }> {
                 });
                 return;
             }
+            let flag = true;
+            this.state.players.forEach(player => {
+                if (player.sessionId !== client.sessionId && player.name === newName) {
+                    flag = false;
+                }
+            });
+
+            if (!flag) {
+                client.send(SessionMessage.CAUGHT_ERROR, {
+                    code: ExtendErrorCode.BAD_REQUEST,
+                    message: "Someone else has already had the name" 
+                });
+                return;
+            }
 
             const player = this.state.players.get(client.sessionId);
             if (player) {
+                this.state.messages = new ArraySchema(...this.state.messages.map(message => {
+                    message.senderName = (message.senderId === player.sessionId && message.senderName === player.name) ? newName : message.senderName;
+                    return message;
+                }));
                 player.name = newName;
             }
             else {
@@ -135,6 +155,27 @@ export class Session extends Room<{ state: GameState }> {
                 targetClient?.leave(ExtendCloseCode.KICK_PLAYER);
             }
         });
+
+        this.onMessage(SessionMessage.SEND_MESSAGE, (client, content: string) => {
+            const player = this.state.players.get(client.sessionId);
+            if (player) {
+                const message = new Message();
+                message.content = content;
+                message.senderId = player.sessionId;
+                message.senderName = player.name;
+                message.timestamp = Date.now();
+                this.state.messages.push(message);
+                if (this.state.messages.length > MAX_MESSAGES_COUNT) {
+                    this.state.messages.shift();
+                }
+            }
+            else {
+                client.send(SessionMessage.CAUGHT_ERROR, {
+                    code: ExtendErrorCode.NOT_FOUND,
+                    message: "Player not found"
+                });
+            }
+        });
     }
 
     /* Runs before onJoin (runs when user join a room) */
@@ -173,7 +214,7 @@ export class Session extends Room<{ state: GameState }> {
     onLeave(client: Client<any>, code?: number): void | Promise<any> {
         if (code !== CloseCode.CONSENTED && code !== CloseCode.SERVER_SHUTDOWN && code !== ExtendCloseCode.KICK_PLAYER) {
             try {
-                this.allowReconnection(client, 60).then(() => {
+                this.allowReconnection(client, MAX_RECONNECTION_DURATION).then(() => {
                     console.log(`Player ${client.sessionId} reconnected`);
                 });
                 return;

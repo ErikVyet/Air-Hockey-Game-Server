@@ -11,5 +11,6 @@ export enum SessionMessage {
     UPDATE_PLAYER_ROLE = "updatePlayerRole",
     UPDATE_PLAYER_READY_STATE = "updatePlayerReadyState",
     KICK_PLAYER = "kickPlayer",
+    SEND_MESSAGE = "sendMessage",
     CAUGHT_ERROR = "caughtError"
 }
