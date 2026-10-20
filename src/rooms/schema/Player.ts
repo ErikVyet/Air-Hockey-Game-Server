@@ -5,7 +5,7 @@ export class Player extends schema({
     name: t.string(),
     role: t.string().default("spectator"),
     position: t.array("number").default(new ArraySchema(0, 0, 0)),
-    scores: t.array("number").default(new ArraySchema()),
+    score: t.number().default(0),
     isHost: t.boolean(),
     isReady: t.boolean().default(true)
 }){};

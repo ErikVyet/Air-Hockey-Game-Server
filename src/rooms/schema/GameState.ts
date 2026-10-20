@@ -1,6 +1,7 @@
 import { ArraySchema, schema, t } from "@colyseus/schema";
 import { Player } from "./Player";
 import { Message } from "./Message";
+import { INITIAL_COUNT_DOWN } from "../../constants/State";
 
 export class GameState extends schema({
     hostSessionId: t.string().default(""),
@@ -12,5 +13,6 @@ export class GameState extends schema({
     maxRounds: t.number().default(5),
     puckPosition: t.array("number").default(new ArraySchema(0, 0.5, 0)),
     hasStarted: t.boolean().default(false),
+    countDown: t.number().default(INITIAL_COUNT_DOWN),
     messages: t.array(Message).default(new ArraySchema())
 }){};

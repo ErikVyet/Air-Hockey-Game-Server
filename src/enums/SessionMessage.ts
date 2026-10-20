@@ -1,6 +1,7 @@
 
 export enum SessionMessage {
     START_GAME = "startGame",
+    START_COUNT_DOWN = "startCountDown",
     UPDATE_MAX_ROUNDS = "updateMaxRounds",
     UPDATE_PUCK = "updatePuck",
     UPDATE_STRIKER = "updateStriker",

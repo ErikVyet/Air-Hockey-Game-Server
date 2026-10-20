@@ -9,7 +9,7 @@ import { Message } from "./schema/Message";
 import { MAX_MESSAGES_COUNT, MAX_RECONNECTION_DURATION, MAX_ROUNDS, MIN_ROUNDS } from "../constants/State";
 
 
-/* Options' JSON structure
+/* Options' JSON structure for hosting
 {
     "sessionName": ...,
     "password": ...,
@@ -39,8 +39,48 @@ export class Session extends Room<{ state: GameState }> {
             hasPassword: !!this.password
         });
 
-        this.onMessage(SessionMessage.START_GAME, () => {
-            this.state.hasStarted = true;
+        this.onMessage(SessionMessage.START_GAME, (client) => {
+            let flag = true;
+            let playerCount = 0;
+            this.state.players.forEach(player => {
+                if (!player.isReady) {
+                    flag = false;
+                }
+                if (player.role === "player") {
+                    playerCount++;
+                }
+            });
+
+            if (flag && playerCount === 2) {
+                this.lock().then(() => {
+                    this.state.hasStarted = true;
+                }).catch(reason => {
+                    client.send(SessionMessage.CAUGHT_ERROR, {
+                        code: ExtendErrorCode.INTERNAL_SERVER_ERROR,
+                        message: "Something went wrong. Please try again later"
+                    });
+                });
+            }
+            else {
+                client.send(SessionMessage.CAUGHT_ERROR, {
+                    code: ExtendErrorCode.BAD_REQUEST,
+                    message: playerCount !== 2 ? "Require another player to start" : "Some players are not ready yet"
+                });
+            }
+        });
+
+        this.onMessage(SessionMessage.START_COUNT_DOWN, (client) => {
+            if (client.sessionId !== this.state.hostSessionId) return;
+
+            if (this.state.countDown < 0) return;
+
+            const interval = setInterval(() => {
+                this.state.countDown--;
+                
+                if (this.state.countDown < 0) {
+                    clearInterval(interval);
+                }
+            }, 1000);
         });
 
         this.onMessage(SessionMessage.UPDATE_MAX_ROUNDS, (client, maxRounds: number) => {
@@ -60,11 +100,11 @@ export class Session extends Room<{ state: GameState }> {
             player.position = new ArraySchema<number>(...position);
         });
 
-        this.onMessage(SessionMessage.UPDATE_SCORES, (client, isScored: boolean) => {
+        this.onMessage(SessionMessage.UPDATE_SCORES, (client) => {
             const player = this.state.players.get(client.sessionId);
             if (!player || player.role !== "player") return;
 
-            player.scores.push(isScored ? 1 : 0);
+            player.score++;
         });
 
         this.onMessage(SessionMessage.UPDATE_ROUND, () => {
