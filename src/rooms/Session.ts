@@ -89,8 +89,8 @@ export class Session extends Room<{ state: GameState }> {
             }
         });
 
-        this.onMessage(SessionMessage.UPDATE_PUCK, (_client, position: [number, number, number]) => {
-            this.state.puckPosition = new ArraySchema<number>(...position);
+        this.onMessage(SessionMessage.UPDATE_PUCK, (client, position: [number, number, number]) => {
+            this.broadcast(SessionMessage.UPDATE_PUCK, position, { except: client });
         });
 
         this.onMessage(SessionMessage.UPDATE_STRIKER, (client, position: [number, number, number]) => {
